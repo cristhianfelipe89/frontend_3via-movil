@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import createSocket from "../services/socket";
 
@@ -12,11 +12,13 @@ function Game() {
     const [selectedIndex, setSelectedIndex] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Colores de opciones (no hace falta useMemo)
+    const optionColors = ["#2e7d32", "#1565c0", "#6a1b9a", "#ef6c00"];
+
     useEffect(() => {
         const socket = createSocket();
         if (!socket.connected) socket.connect();
 
-        // Reenganche: si el servidor emite game:start nos da el gameId
         socket.on("game:start", ({ gameId: gid }) => {
             setGameId(gid);
         });
@@ -41,7 +43,6 @@ function Game() {
             socket.off("game:question");
             socket.off("game:roundSummary");
             socket.off("game:finished");
-            // no desconectar: el socket es singleton
         };
     }, [navigate]);
 
@@ -59,9 +60,13 @@ function Game() {
         });
     };
 
-    if (!question) return <div className="card"><p>Esperando pregunta...</p></div>;
-
-    const optionColors = useMemo(() => ["#2e7d32", "#1565c0", "#6a1b9a", "#ef6c00"], []);
+    if (!question) {
+        return (
+            <div className="card">
+                <p>Esperando pregunta...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="card">
