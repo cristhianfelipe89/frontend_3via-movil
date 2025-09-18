@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import createSocket from "../services/socket";
+import createSocket, { disconnectSocket } from "../services/socket";
 
 function Game() {
     const navigate = useNavigate();
@@ -12,9 +12,10 @@ function Game() {
     const [selectedIndex, setSelectedIndex] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const [roundSummary, setRoundSummary] = useState(null);
+    // Nuevo estado para final del juego
+    const [finished, setFinished] = useState(false);
+    const [winner, setWinner] = useState(null);
 
-    // Colores de opciones
     const optionColors = ["#2e7d32", "#1565c0", "#6a1b9a", "#ef6c00"];
 
     useEffect(() => {
@@ -29,15 +30,6 @@ function Game() {
             setQuestion(q);
             setSelectedIndex(null);
             setIsSubmitting(false);
-            setRoundSummary(null); // limpiar feedback de la ronda previa
-        });
-
-        socket.on("game:roundSummary", (summary) => {
-            console.log("[RoundSummary]", summary);
-            setRoundSummary(summary);
-            setQuestion(null); // ocultar pregunta hasta que llegue la siguiente
-            setSelectedIndex(null);
-            setIsSubmitting(false);
         });
 
         socket.on("game:error", ({ message }) => {
@@ -45,14 +37,16 @@ function Game() {
             alert(message || "Error de juego");
         });
 
+        // Cuando termina la partida
         socket.on("game:finished", ({ winner }) => {
-            navigate("/results", { state: { winner } });
+            setWinner(winner);
+            setFinished(true);
         });
 
         return () => {
             socket.off("game:start");
             socket.off("game:question");
-            socket.off("game:roundSummary");
+            socket.off("game:error");
             socket.off("game:finished");
         };
     }, [navigate]);
@@ -71,23 +65,40 @@ function Game() {
         });
     };
 
-    // Mostrar feedback de la ronda
-    if (roundSummary && !question) {
+    // Vista cuando termina el juego
+    if (finished) {
         return (
             <div className="card">
-                <h2>Resumen de la ronda</h2>
-                <p>
-                    Respuesta correcta:{" "}
-                    <strong>{roundSummary.correctIndex + 1}</strong>
-                </p>
-                <p>Eliminados: {roundSummary.eliminated?.length || 0}</p>
-                <p>Jugadores vivos: {roundSummary.aliveCount}</p>
-                <p>⏳ Esperando la siguiente pregunta...</p>
+                <h2>¡Juego terminado!</h2>
+                {winner ? (
+                    <p>Ganador: {winner}</p>
+                ) : (
+                    <p>Hubo un empate</p>
+                )}
+                <button
+                    onClick={() => {
+                        disconnectSocket(); // corta conexión
+                        localStorage.removeItem("gameId"); // limpia datos
+                        navigate("/lobby"); // regresa al lobby
+                    }}
+                    style={{
+                        marginTop: 20,
+                        padding: "12px 18px",
+                        border: "none",
+                        background: "#1565c0",
+                        color: "#fff",
+                        borderRadius: 8,
+                        fontSize: 18,
+                        cursor: "pointer",
+                    }}
+                >
+                    Regresar al Lobby
+                </button>
             </div>
         );
     }
 
-    // Si no hay pregunta ni resumen todavía
+    // Vista cuando no hay pregunta aún
     if (!question) {
         return (
             <div className="card">
@@ -96,7 +107,7 @@ function Game() {
         );
     }
 
-    // Render de la pregunta
+    // Vista normal de preguntas
     return (
         <div className="card">
             <h2>{question.statement}</h2>
@@ -131,3 +142,4 @@ function Game() {
 }
 
 export default Game;
+
