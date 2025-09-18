@@ -12,7 +12,9 @@ function Game() {
     const [selectedIndex, setSelectedIndex] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Colores de opciones (no hace falta useMemo)
+    const [roundSummary, setRoundSummary] = useState(null);
+
+    // Colores de opciones
     const optionColors = ["#2e7d32", "#1565c0", "#6a1b9a", "#ef6c00"];
 
     useEffect(() => {
@@ -25,6 +27,15 @@ function Game() {
 
         socket.on("game:question", (q) => {
             setQuestion(q);
+            setSelectedIndex(null);
+            setIsSubmitting(false);
+            setRoundSummary(null); // limpiar feedback de la ronda previa
+        });
+
+        socket.on("game:roundSummary", (summary) => {
+            console.log("[RoundSummary]", summary);
+            setRoundSummary(summary);
+            setQuestion(null); // ocultar pregunta hasta que llegue la siguiente
             setSelectedIndex(null);
             setIsSubmitting(false);
         });
@@ -60,6 +71,23 @@ function Game() {
         });
     };
 
+    // Mostrar feedback de la ronda
+    if (roundSummary && !question) {
+        return (
+            <div className="card">
+                <h2>Resumen de la ronda</h2>
+                <p>
+                    Respuesta correcta:{" "}
+                    <strong>{roundSummary.correctIndex + 1}</strong>
+                </p>
+                <p>Eliminados: {roundSummary.eliminated?.length || 0}</p>
+                <p>Jugadores vivos: {roundSummary.aliveCount}</p>
+                <p>⏳ Esperando la siguiente pregunta...</p>
+            </div>
+        );
+    }
+
+    // Si no hay pregunta ni resumen todavía
     if (!question) {
         return (
             <div className="card">
@@ -68,6 +96,7 @@ function Game() {
         );
     }
 
+    // Render de la pregunta
     return (
         <div className="card">
             <h2>{question.statement}</h2>

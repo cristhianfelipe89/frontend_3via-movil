@@ -4,20 +4,16 @@ import { useLocation, useNavigate } from "react-router-dom";
 function Results() {
     const { state } = useLocation();
     const navigate = useNavigate();
-
-    const winnerId = state?.winner;
-
-    
-    const currentUser = JSON.parse(localStorage.getItem("user"));
-    const winnerName =
-        currentUser && currentUser.id === winnerId
-            ? currentUser.name
-            : winnerId;
+    const winner = state?.winner;
 
     return (
         <div className="card">
             <h2>Resultados</h2>
-            <p>Ganador: {winnerName || "Desconocido"}</p>
+            {winner ? (
+                <p>Ganador: {winner.name} 🎉</p>
+            ) : (
+                <p>No hubo ganador</p>
+            )}
             <button onClick={() => navigate("/lobby")}>Volver al Lobby</button>
         </div>
     );

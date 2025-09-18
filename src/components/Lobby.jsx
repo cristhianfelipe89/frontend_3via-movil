@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import createSocket from "../services/socket";
+import createSocket, { disconnectSocket } from "../services/socket";
 
-function Lobby({ user, onStartGame }) {
+function Lobby({ user, onStartGame, onLogout }) {
     const [players, setPlayers] = useState([]);
     const [startingInMs, setStartingInMs] = useState(null);
     const [countdown, setCountdown] = useState(null);
@@ -20,7 +20,10 @@ function Lobby({ user, onStartGame }) {
 
         socket.on("lobby:update", (data) => {
             // data: { count, min, max }
-            setPlayers(Array.from({ length: data.count }, (_, i) => ({ _id: i, name: `Jugador ${i+1}` })));
+            setPlayers(Array.from({ length: data.count }, (_, i) => ({
+                _id: i,
+                name: `Jugador ${i + 1}`
+            })));
         });
 
         socket.on("game:start", ({ gameId }) => {
@@ -30,20 +33,19 @@ function Lobby({ user, onStartGame }) {
 
         // Salvaguarda: si por timing recibimos la pregunta antes de procesar game:start
         socket.on("game:question", () => {
-            // Si aún no estamos en /game, navegar
-            navigate("/game");
+            if (window.location.pathname !== "/game") {
+                navigate("/game");
+            }
         });
 
         socket.on("lobby:starting", ({ inMs, at }) => {
             setStartingInMs(inMs);
-            // Actualizar cuenta regresiva cada 200ms para suavidad
             const update = () => {
                 const remaining = Math.max(0, at - Date.now());
                 setCountdown(Math.ceil(remaining / 1000));
             };
             update();
             const id = setInterval(update, 200);
-            // Limpiar cuando arranque juego o al desmontar
             socket.once("game:start", () => clearInterval(id));
             return () => clearInterval(id);
         });
@@ -53,15 +55,14 @@ function Lobby({ user, onStartGame }) {
             socket.off("game:start");
             socket.off("lobby:starting");
             socket.off("game:question");
-            // no desconectar el singleton; sólo limpiar eventos
         };
     }, [currentUser, onStartGame, navigate]);
 
     // 🔹 Función para cerrar sesión
     const handleLogout = () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        navigate("/"); // redirige al login
+        disconnectSocket(); // 🔌 cierra conexión activa
+        if (onLogout) onLogout(); // ⬅️ usa el callback que recibes de App
+        navigate("/login");
     };
 
     return (
