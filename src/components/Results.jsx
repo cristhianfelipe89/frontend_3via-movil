@@ -10,10 +10,10 @@ function Results() {
         <div className="card">
             <h2>Resultados</h2>
             {winner ? (
-                <p>Ganador: {winner.name} 🎉</p>
+                <p>Ganador: {winner.name} 🎉</p> // ✅ ahora usa el nombre
             ) : (
-                <p>No hubo ganador</p>
-            )}
+                <p>Hubo un empate</p>
+             )}
             <button onClick={() => navigate("/lobby")}>Volver al Lobby</button>
         </div>
     );

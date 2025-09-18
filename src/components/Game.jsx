@@ -38,10 +38,13 @@ function Game() {
         });
 
         // Cuando termina la partida
+        // Mantén winner como objeto
         socket.on("game:finished", ({ winner }) => {
-            setWinner(winner);
-            setFinished(true);
+            disconnectSocket();
+            navigate("/results", { state: { winner } });
         });
+
+
 
         return () => {
             socket.off("game:start");
