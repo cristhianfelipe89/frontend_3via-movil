@@ -12,9 +12,9 @@ function Game() {
     const [selectedIndex, setSelectedIndex] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Nuevo estado para final del juego
     const [finished, setFinished] = useState(false);
     const [winner, setWinner] = useState(null);
+    const [lost, setLost] = useState(false); // estado nuevo
 
     const optionColors = ["#2e7d32", "#1565c0", "#6a1b9a", "#ef6c00"];
 
@@ -34,23 +34,24 @@ function Game() {
 
         socket.on("game:error", ({ message }) => {
             navigate("/lobby");
-            alert(message || "Error de juego");
         });
 
-        // Cuando termina la partida
-        // Mantén winner como objeto
         socket.on("game:finished", ({ winner }) => {
-            disconnectSocket();
-            navigate("/results", { state: { winner } });
+            setWinner(winner);
+            setFinished(true);
         });
 
-
+        // cuando pierdes
+        socket.on("game:lost", () => {
+            setLost(true);
+        });
 
         return () => {
             socket.off("game:start");
             socket.off("game:question");
             socket.off("game:error");
             socket.off("game:finished");
+            socket.off("game:lost");
         };
     }, [navigate]);
 
@@ -68,40 +69,75 @@ function Game() {
         });
     };
 
+    // Vista de cuando pierdes
+    if (lost) {
+    return (
+        <div className="card">
+            <h2>Perdiste 😢</h2>
+            <p>¡Vuelve a intentarlo en otra partida!</p>
+            <button
+                onClick={() => {
+                    disconnectSocket();   // 🔴 corta conexión del juego actual
+                    setQuestion(null);    // limpia preguntas
+                    setWinner(null);      // limpia ganador
+                    setFinished(false);   // limpia estado
+                    setLost(false);       // limpia perdido
+                    navigate("/lobby");   // ✅ redirige al lobby real
+                }}
+                style={{
+                    marginTop: 20,
+                    padding: "12px 18px",
+                    border: "none",
+                    background: "#d32f2f",
+                    color: "#fff",
+                    borderRadius: 8,
+                    fontSize: 18,
+                    cursor: "pointer",
+                }}
+            >
+                Regresar al Lobby
+            </button>
+        </div>
+    );
+}
+
     // Vista cuando termina el juego
     if (finished) {
-        return (
-            <div className="card">
-                <h2>¡Juego terminado!</h2>
-                {winner ? (
-                    <p>Ganador: {winner}</p>
-                ) : (
-                    <p>Hubo un empate</p>
-                )}
-                <button
-                    onClick={() => {
-                        disconnectSocket(); // corta conexión
-                        localStorage.removeItem("gameId"); // limpia datos
-                        navigate("/lobby"); // regresa al lobby
-                    }}
-                    style={{
-                        marginTop: 20,
-                        padding: "12px 18px",
-                        border: "none",
-                        background: "#1565c0",
-                        color: "#fff",
-                        borderRadius: 8,
-                        fontSize: 18,
-                        cursor: "pointer",
-                    }}
-                >
-                    Regresar al Lobby
-                </button>
-            </div>
-        );
-    }
+    return (
+        <div className="card">
+            <h2>¡Juego terminado!</h2>
+            {winner ? (
+                <p>Ganador: {winner.name}</p>
+            ) : (
+                <p>Hubo un empate</p>
+            )}
+            <button
+                onClick={() => {
+                    disconnectSocket();   // 🔴 corta socket
+                    setQuestion(null);
+                    setWinner(null);
+                    setFinished(false);
+                    setLost(false);
+                    navigate("/lobby");   // ✅ siempre vuelve limpio al lobby
+                }}
+                style={{
+                    marginTop: 20,
+                    padding: "12px 18px",
+                    border: "none",
+                    background: "#1565c0",
+                    color: "#fff",
+                    borderRadius: 8,
+                    fontSize: 18,
+                    cursor: "pointer",
+                }}
+            >
+                Regresar al Lobby
+            </button>
+        </div>
+    );
+}
 
-    // Vista cuando no hay pregunta aún
+    // Vista cuando no hay pregunta
     if (!question) {
         return (
             <div className="card">
@@ -110,7 +146,7 @@ function Game() {
         );
     }
 
-    // Vista normal de preguntas
+    // Vista de preguntas
     return (
         <div className="card">
             <h2>{question.statement}</h2>
@@ -145,4 +181,3 @@ function Game() {
 }
 
 export default Game;
-
