@@ -1,7 +1,7 @@
 import { io } from "socket.io-client";
 
 //const WS_URL = import.meta.env.VITE_WS_URL || "http://localhost:5000";
-const WS_URL = import.meta.env.VITE_WS_URL || "http://api.prouni.online";
+const WS_URL = import.meta.env.VITE_WS_URL || "https://api.prouni.online";
 
 let singleton = null;
 let lastToken = null;
