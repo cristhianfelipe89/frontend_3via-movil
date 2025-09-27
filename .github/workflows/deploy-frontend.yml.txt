@@ -24,7 +24,7 @@ jobs:
 
       - name: Deploy a S3 y limpiar cache CloudFront
         run: |
-          aws s3 sync build/ s3://frontend-3via-movil --delete
+          aws s3 sync build/ s3://frontend_3via-movil --delete
           aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_ID }} --paths "/*"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
