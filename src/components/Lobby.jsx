@@ -68,7 +68,7 @@ function Lobby({ user, onStartGame, onLogout }) {
     return (
         <div className="card">
             <h2>🎮 Lobby</h2>
-            <p>Bienvenido a 3via {currentUser?.name || "Jugador"} 👋</p>
+            <p>Bienvenido{currentUser?.name || "Jugador"} 👋</p>
             <p>Esperando jugadores...</p>
 
             {typeof countdown === "number" && (
